@@ -97,7 +97,8 @@ class WatsonxAIBackend(FormatterBackend):
         if api_key is None:
             api_key = os.environ.get("WATSONX_API_KEY")
         if project_id is None:
-            self._project_id = os.environ.get("WATSONX_PROJECT_ID")
+            project_id = os.environ.get("WATSONX_PROJECT_ID")
+        self._project_id = project_id  # Always set, whether from param or env
 
         self._creds = Credentials(url=base_url, api_key=api_key)
         self._kwargs = kwargs
