@@ -4,10 +4,10 @@ from copy import deepcopy
 
 import tqdm
 
+import mellea.stdlib.functional as mfuncs
 from mellea.backends import Backend, BaseModelSubclass
 from mellea.helpers.async_helpers import wait_for_all_mots
 from mellea.helpers.fancy_logger import FancyLogger
-from mellea.stdlib import funcs as mfuncs
 from mellea.stdlib.base import CBlock, ChatContext, Component, Context, ModelOutputThunk
 from mellea.stdlib.instruction import Instruction
 from mellea.stdlib.requirement import Requirement, ScorerRequirement, ValidationResult
@@ -132,7 +132,7 @@ class BestofNSamplingStrategy(BaseSamplingStrategy):
                 context=result_ctx,
                 backend=backend,
                 output=result,
-                format=format,
+                format=None,
                 model_options=model_options,
                 input=next_action._description,  # type: ignore
                 # tool_calls=tool_calls  # Don't support using tool calls in validation strategies.
