@@ -5,6 +5,7 @@ from typing import Literal, TypedDict
 from typing_extensions import NotRequired
 
 from mellea import MelleaSession
+from mellea.backends.litellm import LiteLLMBackend
 from mellea.backends.ollama import OllamaModelBackend
 from mellea.backends.openai import OpenAIBackend
 from mellea.backends.types import ModelOption
@@ -50,6 +51,7 @@ class DecompBackend(str, Enum):
     ollama = "ollama"
     openai = "openai"
     rits = "rits"
+    claude = "claude"
 
 
 RE_JINJA_VAR = re.compile(r"\{\{\s*(.*?)\s*\}\}")
@@ -104,6 +106,23 @@ def decompose(
                 RITSBackend(
                     RITSModelIdentifier(endpoint=backend_endpoint, model_name=model_id),
                     api_key=backend_api_key,
+                    model_options={"timeout": backend_req_timeout},
+                )
+            )
+        case DecompBackend.claude:
+            assert backend_api_key is not None, (
+                'Required to provide "backend_api_key" for this configuration'
+            )
+            # LiteLLM uses the ANTHROPIC_API_KEY environment variable by default,
+            # but we'll set it explicitly here if provided
+            import os
+
+            os.environ["ANTHROPIC_API_KEY"] = backend_api_key
+
+            m_session = MelleaSession(
+                LiteLLMBackend(
+                    model_id=model_id,
+                    base_url=backend_endpoint,  # Optional, only needed for custom endpoints
                     model_options={"timeout": backend_req_timeout},
                 )
             )
