@@ -65,6 +65,8 @@ def decompose(
     backend_req_timeout: int = 300,
     backend_endpoint: str | None = None,
     backend_api_key: str | None = None,
+    subtask_list_template: str | None = None,
+    custom_icl_examples: list[dict] | None = None,
 ) -> DecompPipelineResult:
     if user_input_variable is None:
         user_input_variable = []
@@ -128,7 +130,12 @@ def decompose(
             )
     # endregion
 
-    subtasks: list[SubtaskItem] = subtask_list.generate(m_session, task_prompt).parse()
+    subtasks: list[SubtaskItem] = subtask_list.generate(
+        m_session, 
+        task_prompt, 
+        custom_template=subtask_list_template,
+        custom_icl_examples=custom_icl_examples
+    ).parse()
 
     task_prompt_constraints: list[str] = constraint_extractor.generate(
         m_session, task_prompt, enforce_same_words=False

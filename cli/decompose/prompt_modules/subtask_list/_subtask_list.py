@@ -138,7 +138,14 @@ class _SubtaskList(PromptModule):
         """
         assert input_str is not None, 'This module requires the "input_str" argument'
 
-        system_prompt = get_system_prompt()
+        # Extract custom parameters from kwargs if provided
+        custom_template = kwargs.get('custom_template', None)
+        custom_icl_examples = kwargs.get('custom_icl_examples', None)
+        
+        system_prompt = get_system_prompt(
+            custom_template=custom_template,
+            custom_icl_examples=custom_icl_examples
+        )
         user_prompt = get_user_prompt(task_prompt=input_str)
 
         action = Message("user", user_prompt)
