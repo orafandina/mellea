@@ -17,10 +17,12 @@ user_template = environment.get_template("user_template.jinja2")
 def get_system_prompt(
     icl_example_groups: list[ICLExampleGroup] = default_icl_example_groups,
     user_input_variables_exists: bool = False,
+    is_last_subtask: bool = False,
 ) -> str:
     return system_template.render(
         icl_example_groups=icl_example_groups,
         user_input_variables_exists=user_input_variables_exists,
+        is_last_subtask=is_last_subtask,
     ).strip()
 
 

@@ -183,9 +183,6 @@ class _SubtaskPromptGenerator(PromptModule):
         assert input_str is not None, 'This module requires the "input_str" argument'
 
         user_input_variables_exists = True if user_input_var_names else False
-        system_prompt = get_system_prompt(
-            user_input_variables_exists=user_input_variables_exists
-        )
 
         execution_plan = [
             f"{subtask_tag[0]} - Variable: {subtask_tag[1]}"
@@ -193,9 +190,19 @@ class _SubtaskPromptGenerator(PromptModule):
         ]
 
         all_results_string = ""
+        total_subtasks = len(kwargs["subtasks_and_tags"])
 
         # TODO: Make this whole segment execute concurrently using regular threading
         for i, subtask_tag in enumerate(kwargs["subtasks_and_tags"]):
+            # Check if this is the last subtask
+            is_last = (i == total_subtasks - 1)
+            
+            # Generate system prompt with last subtask flag
+            system_prompt = get_system_prompt(
+                user_input_variables_exists=user_input_variables_exists,
+                is_last_subtask=is_last,
+            )
+            
             previous_tags = [kwargs["subtasks_and_tags"][j][1] for j in range(i)]
 
             # TODO: Validate the values of both "user_input_var_names" and "previous_tags"
