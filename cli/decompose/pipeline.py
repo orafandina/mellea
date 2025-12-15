@@ -50,6 +50,7 @@ class DecompPipelineResult(TypedDict):
 class DecompBackend(str, Enum):
     ollama = "ollama"
     openai = "openai"
+    watsonx = "watsonx"
     rits = "rits"
     claude = "claude"
 
@@ -65,6 +66,8 @@ def decompose(
     backend_req_timeout: int = 300,
     backend_endpoint: str | None = None,
     backend_api_key: str | None = None,
+    backend_project_id: str | None = None,
+    max_new_tokens: int = 4096,
     subtask_list_template: str | None = None,
     custom_icl_examples: list[dict] | None = None,
     constraint_extractor_template: str | None = None,
@@ -96,6 +99,29 @@ def decompose(
                     base_url=backend_endpoint,
                     api_key=backend_api_key,
                     model_options={"timeout": backend_req_timeout},
+                )
+            )
+        case DecompBackend.watsonx:
+            assert backend_api_key is not None, (
+                'Required to provide "backend_api_key" for watsonx configuration'
+            )
+            assert backend_endpoint is not None, (
+                'Required to provide "backend_endpoint" (for watsonx configuration)'
+            )
+            assert backend_project_id is not None, (
+                'Required to provide "backend_project_id" for watsonx configuration'
+            )
+         
+            
+            from mellea.backends.watsonx import WatsonxAIBackend
+            
+            m_session = MelleaSession(
+                WatsonxAIBackend(
+                    model_id=model_id,
+                    api_key=backend_api_key,
+                    base_url=backend_endpoint,  
+                    model_options={"timeout": backend_req_timeout},
+                    project_id=backend_project_id,
                 )
             )
         case DecompBackend.rits:
@@ -137,6 +163,7 @@ def decompose(
     subtasks: list[SubtaskItem] = subtask_list.generate(
         m_session, 
         task_prompt, 
+        max_new_tokens=max_new_tokens,
         custom_template=subtask_list_template,
         custom_icl_examples=custom_icl_examples
     ).parse()
@@ -147,6 +174,7 @@ def decompose(
         task_prompt,
         user_input_var_names=user_input_variable,
         subtasks_and_tags=subtasks,
+        max_new_tokens=max_new_tokens,
         last_subtask_system_template=last_subtask_system_template,
         last_subtask_user_template=last_subtask_user_template,
     ).parse()
@@ -162,6 +190,7 @@ def decompose(
             m_session,
             input_str=None,  # Not used in hybrid mode
             enforce_same_words=False,
+            max_new_tokens=max_new_tokens,
             custom_template=constraint_extractor_template or "per_subtask_hybrid",
             custom_icl_examples=constraint_extractor_icl_examples,
             custom_user_template=constraint_extractor_template or "per_subtask_hybrid",
@@ -175,7 +204,7 @@ def decompose(
             if constraint not in all_constraints_dict:
                 # Only call validation_decision once per unique constraint
                 all_constraints_dict[constraint] = validation_decision.generate(
-                    m_session, constraint
+                    m_session, constraint, max_new_tokens=max_new_tokens
                 ).parse()
         
         # Build SubtaskPromptConstraintsItem

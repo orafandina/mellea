@@ -99,7 +99,7 @@ class WatsonxAIBackend(FormatterBackend):
 
         if project_id is None:
             project_id = os.environ.get("WATSONX_PROJECT_ID")
-        self._project_id = project_id
+        self._project_id = project_id  # Always set, whether from param or env
 
         self._creds = Credentials(url=base_url, api_key=api_key)
         self._kwargs = kwargs
