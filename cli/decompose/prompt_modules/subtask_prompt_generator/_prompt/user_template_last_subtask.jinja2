@@ -1,0 +1,21 @@
+Here are the 4 parameters inside their respective tags. Remember, this is the FINAL subtask that will produce the user-facing output. Write the <subtask_prompt_template> accordingly:
+
+<entire_task_prompt>
+{{ task_prompt }}
+</entire_task_prompt>
+<execution_plan>
+{%- for step in execution_plan %}
+{{ step }}
+{%- endfor %}
+</execution_plan>
+<available_content_variables>
+{%- for variable in available_content_variables %}
+{{ variable }}
+{%- endfor %}
+</available_content_variables>
+<target_subtask>
+{{ target_subtask }}
+</target_subtask>
+
+REMINDER: This is the FINAL subtask. Your prompt template should produce a complete, polished answer that directly addresses the original task and will be delivered to the user.
+

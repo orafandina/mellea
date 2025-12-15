@@ -67,6 +67,10 @@ def decompose(
     backend_api_key: str | None = None,
     subtask_list_template: str | None = None,
     custom_icl_examples: list[dict] | None = None,
+    constraint_extractor_template: str | None = None,
+    constraint_extractor_icl_examples: list[dict] | None = None,
+    last_subtask_system_template: str | None = None,
+    last_subtask_user_template: str | None = None,
 ) -> DecompPipelineResult:
     if user_input_variable is None:
         user_input_variable = []
@@ -137,29 +141,52 @@ def decompose(
         custom_icl_examples=custom_icl_examples
     ).parse()
 
-    task_prompt_constraints: list[str] = constraint_extractor.generate(
-        m_session, task_prompt, enforce_same_words=False
-    ).parse()
-
-    constraint_validation_strategies: dict[str, Literal["code", "llm"]] = {
-        cons_key: validation_decision.generate(m_session, cons_key).parse()
-        for cons_key in task_prompt_constraints
-    }
-
+    # Generate subtask prompts FIRST (before constraint extraction)
     subtask_prompts: list[SubtaskPromptItem] = subtask_prompt_generator.generate(
         m_session,
         task_prompt,
         user_input_var_names=user_input_variable,
         subtasks_and_tags=subtasks,
+        last_subtask_system_template=last_subtask_system_template,
+        last_subtask_user_template=last_subtask_user_template,
     ).parse()
 
-    subtask_prompts_with_constraints: list[SubtaskPromptConstraintsItem] = (
-        subtask_constraint_assign.generate(
+    # NEW APPROACH: Generate constraints PER SUBTASK using hybrid method
+    # This considers both the original task prompt and the specific subtask context
+    subtask_prompts_with_constraints: list[SubtaskPromptConstraintsItem] = []
+    all_constraints_dict: dict[str, Literal["code", "llm"]] = {}  # Track all unique constraints
+    
+    for subtask_prompt in subtask_prompts:
+        # Extract constraints for THIS specific subtask using hybrid approach
+        subtask_constraints: list[str] = constraint_extractor.generate(
             m_session,
-            subtasks_tags_and_prompts=subtask_prompts,
-            constraint_list=task_prompt_constraints,
+            input_str=None,  # Not used in hybrid mode
+            enforce_same_words=False,
+            custom_template=constraint_extractor_template or "per_subtask_hybrid",
+            custom_icl_examples=constraint_extractor_icl_examples,
+            custom_user_template=constraint_extractor_template or "per_subtask_hybrid",
+            original_task_prompt=task_prompt,
+            subtask_description=subtask_prompt.subtask,
+            subtask_prompt=subtask_prompt.prompt_template,
         ).parse()
-    )
+        
+        # Determine validation strategy for each constraint
+        for constraint in subtask_constraints:
+            if constraint not in all_constraints_dict:
+                # Only call validation_decision once per unique constraint
+                all_constraints_dict[constraint] = validation_decision.generate(
+                    m_session, constraint
+                ).parse()
+        
+        # Build SubtaskPromptConstraintsItem
+        subtask_prompts_with_constraints.append(
+            SubtaskPromptConstraintsItem(
+                subtask=subtask_prompt.subtask,
+                tag=subtask_prompt.tag,
+                prompt_template=subtask_prompt.prompt_template,
+                constraints=subtask_constraints,
+            )
+        )
 
     decomp_subtask_result: list[DecompSubtasksResult] = [
         DecompSubtasksResult(
@@ -168,7 +195,7 @@ def decompose(
             constraints=[
                 {
                     "constraint": cons_str,
-                    "validation_strategy": constraint_validation_strategies[cons_str],
+                    "validation_strategy": all_constraints_dict[cons_str],
                 }
                 for cons_str in subtask_data.constraints
             ],
@@ -208,9 +235,9 @@ def decompose(
         identified_constraints=[
             {
                 "constraint": cons_str,
-                "validation_strategy": constraint_validation_strategies[cons_str],
+                "validation_strategy": validation_strategy,
             }
-            for cons_str in task_prompt_constraints
+            for cons_str, validation_strategy in all_constraints_dict.items()
         ],
         subtasks=decomp_subtask_result,
     )

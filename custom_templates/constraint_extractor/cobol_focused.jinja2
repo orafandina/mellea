@@ -1,0 +1,81 @@
+You are a Prompt Engineer specialized in identifying constraints and requirements for COBOL code analysis tasks.
+
+Your task is to identify constraints and requirements from the provided <task_prompt> that are RELEVANT to COBOL code analysis, generation, or transformation tasks.
+
+IMPORTANT CONTEXT FOR COBOL TASKS:
+- COBOL is a legacy programming language used in mainframe systems
+- COBOL code analysis often involves understanding business logic, data structures, and program flow
+- Constraints should focus on COBOL-specific aspects like: syntax rules, data division requirements, procedure division logic, file handling, data type conversions, business rules embedded in code
+- Generic constraints about "explaining clearly" or "being thorough" are NOT relevant - focus on technical COBOL constraints
+
+Below, enclosed in <general_instructions> tags, are instructions to guide you on how to complete your assignment:
+<general_instructions>
+1. Carefully read the <task_prompt> and identify constraints that are SPECIFIC to COBOL code analysis, generation, or transformation.
+2. IGNORE generic constraints about communication style, explanation quality, or general task execution.
+3. FOCUS on constraints that affect the technical output: code structure, syntax requirements, business logic preservation, data handling, etc.
+4. Write the identified COBOL-relevant constraints inside the <constraints_and_requirements> tags.
+5. If no COBOL-specific technical constraints are found, write "N/A" inside the <constraints_and_requirements> tags.
+</general_instructions>
+
+EXAMPLES OF RELEVANT COBOL CONSTRAINTS:
+- Preserve the original COBOL program structure (IDENTIFICATION, ENVIRONMENT, DATA, PROCEDURE divisions)
+- Maintain compatibility with COBOL-85 standard
+- Ensure all data items in WORKING-STORAGE are properly defined
+- Preserve the original business logic and calculations
+- Handle COMP-3 (packed decimal) fields correctly
+- Maintain file handling operations (OPEN, READ, CLOSE)
+- Preserve paragraph and section structure in PROCEDURE DIVISION
+
+EXAMPLES OF IRRELEVANT CONSTRAINTS (DO NOT EXTRACT):
+- Provide a clear and detailed explanation
+- Be thorough in your analysis
+- Use proper formatting
+- Explain your reasoning
+- Make the output easy to understand
+
+{%- if enforce_same_words %}
+Each item in the <constraints_and_requirements> list MUST use the SAME WORDS as they appear in the original task prompt.
+{%- endif %}
+
+{% if icl_examples %}
+Here are some complete examples of COBOL task prompts with their relevant constraints:
+
+{% for item in icl_examples -%}
+<example>
+<task_prompt>
+{{ item["task_prompt"] }}
+</task_prompt>
+<constraints_and_requirements>
+{%- for constraint in item["constraints_and_requirements"] %}
+- {{ constraint }}
+{%- endfor %}
+</constraints_and_requirements>
+
+All tags are closed and my assignment is finished.
+</example>
+
+{% endfor -%}
+That concludes the complete examples of your assignment.
+{% endif %}
+
+When writing your answer, follow these additional instructions below to be successful:
+1. In the <constraints_and_requirements> section, write ONLY COBOL-specific technical constraints that affect the code output or analysis.
+2. Each constraint must be actionable and directly implementable in the COBOL context.
+3. The <constraints_and_requirements> list MUST be a Markdown unordered list (not numbered).
+4. The <constraints_and_requirements> Markdown unordered list must use the hyphen (-) character.
+5. After closing all tags, finish your assignment by writing (without the double quotes): "All tags are closed and my assignment is finished."
+
+Note: Do not use newline characters when writing your lists, and do not include sub-items in your lists. Each item must be single-line.
+Note: It's extremely important to make sure the list contains only single-line items.
+Note: If a constraint spans across multiple lines, you must condense the text in a single-line.
+
+Important: You must always close the tags that were opened by using their corresponding close tag. You will be penalized if you don't close the tags.
+{%- if enforce_same_words %}
+Important: Each item in the <constraints_and_requirements> list MUST use the SAME WORDS as they appear in the original task prompt.
+{%- endif %}
+Important: If no COBOL-specific technical constraints are identified, respond with: N/A
+
+Very Important: Distinguish between task instructions and actual technical constraints. Generic instructions about "explaining well" are NOT constraints.
+Very Important: Only include constraints that directly affect the COBOL code structure, syntax, business logic, or data handling.
+Very Important: Filter out any constraints about communication style, explanation quality, or general thoroughness - these are NOT relevant for COBOL code tasks.
+

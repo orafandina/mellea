@@ -95,6 +95,15 @@ class _ConstraintExtractor(PromptModule):
                 Defaults to `8192`.
             parser (`Callable[[str], Any]`, optional): A string parsing function.
                 Defaults to `_ConstraintExtractor._default_parser`.
+            enforce_same_words (`bool`, optional): Whether to enforce using same words from original prompt.
+                Defaults to `False`.
+            **kwargs: Additional keyword arguments:
+                - custom_template (`str`, optional): Name of custom template to use instead of default.
+                - custom_icl_examples (`list[dict]`, optional): Custom ICL examples to use instead of default.
+                - custom_user_template (`str`, optional): Name of custom user template (for hybrid per-subtask approach).
+                - original_task_prompt (`str`, optional): Original task prompt (for hybrid per-subtask approach).
+                - subtask_description (`str`, optional): Subtask title/description (for hybrid per-subtask approach).
+                - subtask_prompt (`str`, optional): Subtask prompt template (for hybrid per-subtask approach).
 
         Returns:
             PromptModuleString: A `PromptModuleString` class containing the generated output.
@@ -106,10 +115,41 @@ class _ConstraintExtractor(PromptModule):
         Raises:
             BackendGenerationError: Some error occurred during the LLM generation call.
         """
-        assert input_str is not None, 'This module requires the "input_str" argument'
-
-        system_prompt = get_system_prompt(enforce_same_words=enforce_same_words)
-        user_prompt = get_user_prompt(task_prompt=input_str)
+        # Extract custom parameters from kwargs if provided
+        custom_template = kwargs.get('custom_template', None)
+        custom_icl_examples = kwargs.get('custom_icl_examples', None)
+        custom_user_template = kwargs.get('custom_user_template', None)
+        
+        # Extract hybrid approach parameters (for per-subtask constraint extraction)
+        original_task_prompt = kwargs.get('original_task_prompt', None)
+        subtask_description = kwargs.get('subtask_description', None)
+        subtask_prompt = kwargs.get('subtask_prompt', None)
+        
+        # Validate input
+        if custom_user_template:
+            # Hybrid approach: requires original_task_prompt, subtask_description, subtask_prompt
+            if not all([original_task_prompt, subtask_description, subtask_prompt]):
+                raise ValueError(
+                    "When using custom_user_template, must provide: "
+                    "original_task_prompt, subtask_description, subtask_prompt"
+                )
+        else:
+            # Standard approach: requires input_str
+            assert input_str is not None, 'This module requires the "input_str" argument'
+        
+        system_prompt = get_system_prompt(
+            enforce_same_words=enforce_same_words,
+            custom_template=custom_template,
+            custom_icl_examples=custom_icl_examples
+        )
+        
+        user_prompt = get_user_prompt(
+            task_prompt=input_str,
+            custom_user_template=custom_user_template,
+            original_task_prompt=original_task_prompt,
+            subtask_description=subtask_description,
+            subtask_prompt=subtask_prompt,
+        )
 
         action = Message("user", user_prompt)
 

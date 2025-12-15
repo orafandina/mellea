@@ -28,6 +28,8 @@ RE_SUBTASK_PROMPT = re.compile(
 
 class SubtaskPromptGeneratorArgs(TypedDict):
     subtasks_and_tags: Sequence[tuple[str, str]]
+    last_subtask_system_template: str | None
+    last_subtask_user_template: str | None
 
 
 @final
@@ -192,15 +194,21 @@ class _SubtaskPromptGenerator(PromptModule):
         all_results_string = ""
         total_subtasks = len(kwargs["subtasks_and_tags"])
 
+        # Extract custom template names if provided
+        custom_system_template = kwargs.get("last_subtask_system_template")
+        custom_user_template = kwargs.get("last_subtask_user_template")
+        
         # TODO: Make this whole segment execute concurrently using regular threading
         for i, subtask_tag in enumerate(kwargs["subtasks_and_tags"]):
-            # Check if this is the last subtask
+            # Check if this is the last subtask AND custom templates are provided
             is_last = (i == total_subtasks - 1)
+            use_last_subtask_template = is_last and (custom_system_template is not None or custom_user_template is not None)
             
-            # Generate system prompt with last subtask flag
+            # Generate system prompt with last subtask flag and custom template if provided
             system_prompt = get_system_prompt(
                 user_input_variables_exists=user_input_variables_exists,
-                is_last_subtask=is_last,
+                is_last_subtask=use_last_subtask_template,
+                custom_template_name=custom_system_template,
             )
             
             previous_tags = [kwargs["subtasks_and_tags"][j][1] for j in range(i)]
@@ -220,6 +228,8 @@ class _SubtaskPromptGenerator(PromptModule):
                 execution_plan=execution_plan,
                 available_content_variables=available_content_variables,
                 target_subtask=subtask_tag[0],
+                is_last_subtask=use_last_subtask_template,
+                custom_template_name=custom_user_template,
             )
 
             action = Message("user", user_prompt)

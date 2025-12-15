@@ -85,27 +85,3 @@ Important: You must always close the tags that were opened by using their corres
 
 Very Important: You can only use variable names that are inside the </available_content_variables> tags.
 Very Important: You can't use variables that are not present in the </available_content_variables> tags.
-
-{% if is_last_subtask -%}
-
-<special_instructions_for_final_subtask>
-IMPORTANT: You are writing the prompt template for the FINAL subtask in the execution plan.
-
-This is the last step that will produce the final output for the user. Therefore, you must pay special attention to the following:
-
-1. **Output Format**: Ensure your prompt template explicitly instructs the AI to format the final response in a way that directly answers the original task.
-
-2. **Completeness**: The prompt must ensure all requirements from the <entire_task_prompt> are addressed in the final output.
-
-3. **No Intermediate Language**: Do not include phrases like "pass this to the next step" or "this will be used by...". This is the END of the pipeline.
-
-4. **User-Facing Quality**: The output will go directly to the user, so emphasize clarity, professionalism, and completeness in your prompt instructions.
-
-5. **Synthesis**: If previous subtasks generated intermediate results, your prompt should instruct the AI to synthesize them into a coherent final answer.
-
-6. **Constraints Compliance**: Double-check that your prompt enforces all constraints from the original task.
-
-Remember: This prompt template will generate the FINAL ANSWER that the user sees. Make it count!
-</special_instructions_for_final_subtask>
-
-{%- endif %}

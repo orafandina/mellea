@@ -1,0 +1,25 @@
+Here are the 4 parameters inside their respective tags. This is the FINAL subtask that will produce the complete COBOL code explanation for the user:
+
+<entire_task_prompt>
+{{ task_prompt }}
+</entire_task_prompt>
+<execution_plan>
+{%- for step in execution_plan %}
+{{ step }}
+{%- endfor %}
+</execution_plan>
+<available_content_variables>
+{%- for variable in available_content_variables %}
+{{ variable }}
+{%- endfor %}
+</available_content_variables>
+<target_subtask>
+{{ target_subtask }}
+</target_subtask>
+
+CRITICAL REMINDER: This is the FINAL subtask. Your prompt template should:
+- Synthesize ALL previous analysis steps into a complete COBOL explanation
+- Produce output that is clear, complete, and ready for the end user
+- Include proper formatting and structure
+- NOT mention any "next steps" - this is the end of the pipeline
+
