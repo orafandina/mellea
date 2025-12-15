@@ -50,6 +50,7 @@ class DecompPipelineResult(TypedDict):
 class DecompBackend(str, Enum):
     ollama = "ollama"
     openai = "openai"
+    watsonx = "watsonx"
     rits = "rits"
     claude = "claude"
 
@@ -65,6 +66,8 @@ def decompose(
     backend_req_timeout: int = 300,
     backend_endpoint: str | None = None,
     backend_api_key: str | None = None,
+    backend_project_id: str | None = None,
+    max_new_tokens: int = 4096,  # ← Added parameter
 ) -> DecompPipelineResult:
     if user_input_variable is None:
         user_input_variable = []
@@ -90,6 +93,29 @@ def decompose(
                     base_url=backend_endpoint,
                     api_key=backend_api_key,
                     model_options={"timeout": backend_req_timeout},
+                )
+            )
+        case DecompBackend.watsonx:
+            assert backend_api_key is not None, (
+                'Required to provide "backend_api_key" for watsonx configuration'
+            )
+            assert backend_endpoint is not None, (
+                'Required to provide "backend_endpoint" (for watsonx configuration)'
+            )
+            assert backend_project_id is not None, (
+                'Required to provide "backend_project_id" for watsonx configuration'
+            )
+         
+            
+            from mellea.backends.watsonx import WatsonxAIBackend
+            
+            m_session = MelleaSession(
+                WatsonxAIBackend(
+                    model_id=model_id,
+                    api_key=backend_api_key,
+                    base_url=backend_endpoint,  
+                    model_options={"timeout": backend_req_timeout},
+                    project_id=backend_project_id,
                 )
             )
         case DecompBackend.rits:
@@ -128,14 +154,18 @@ def decompose(
             )
     # endregion
 
-    subtasks: list[SubtaskItem] = subtask_list.generate(m_session, task_prompt).parse()
+    subtasks: list[SubtaskItem] = subtask_list.generate(
+        m_session, task_prompt, max_new_tokens=max_new_tokens
+    ).parse()
 
     task_prompt_constraints: list[str] = constraint_extractor.generate(
-        m_session, task_prompt, enforce_same_words=False
+        m_session, task_prompt, enforce_same_words=False, max_new_tokens=max_new_tokens
     ).parse()
 
     constraint_validation_strategies: dict[str, Literal["code", "llm"]] = {
-        cons_key: validation_decision.generate(m_session, cons_key).parse()
+        cons_key: validation_decision.generate(
+            m_session, cons_key, max_new_tokens=max_new_tokens
+        ).parse()
         for cons_key in task_prompt_constraints
     }
 
@@ -144,6 +174,7 @@ def decompose(
         task_prompt,
         user_input_var_names=user_input_variable,
         subtasks_and_tags=subtasks,
+        max_new_tokens=max_new_tokens,
     ).parse()
 
     subtask_prompts_with_constraints: list[SubtaskPromptConstraintsItem] = (
@@ -151,6 +182,7 @@ def decompose(
             m_session,
             subtasks_tags_and_prompts=subtask_prompts,
             constraint_list=task_prompt_constraints,
+            max_new_tokens=max_new_tokens,
         ).parse()
     )
 

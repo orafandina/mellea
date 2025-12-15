@@ -50,10 +50,11 @@ def run(
         typer.Option(
             help=(
                 'Backend to be used for inference. Defaults to "ollama".'
-                + ' Options are: "ollama" and "openai".'
+                + ' Options are: "ollama", "openai", and "watsonx".'
                 + ' The "ollama" backend runs a local inference server.'
                 + ' The "openai" backend will send inference requests to any'
                 + " endpoint that's OpenAI compatible."
+                + ' The "watsonx" backend uses IBM watsonx.ai.'
             ),
             case_sensitive=False,
         ),
@@ -83,9 +84,28 @@ def run(
                 + " even if you are running locally (an OpenAI compatible server), you"
                 + ' must set this option, it can be set to "EMPTY" if your local'
                 + " server doesn't need it."
+                + ' If using "--backend watsonx", this must be your Watsonx API key.'
             )
         ),
     ] = None,
+    backend_project_id: Annotated[
+        str | None,
+        typer.Option(
+            help=(
+                'The project ID for Watsonx.ai.'
+                + ' This option is required if using "--backend watsonx".'
+            )
+        ),
+    ] = None,
+    max_new_tokens: Annotated[
+        int,
+        typer.Option(
+            help=(
+                'Maximum number of new tokens to generate per LLM call.'
+                + ' Defaults to 4096. Increase if you get TagExtractionError.'
+            )
+        ),
+    ] = 4096,
     version: Annotated[
         DecompVersion,
         typer.Option(
@@ -149,6 +169,8 @@ def run(
                 backend_req_timeout=backend_req_timeout,
                 backend_endpoint=backend_endpoint,
                 backend_api_key=backend_api_key,
+                backend_project_id=backend_project_id,
+                max_new_tokens=max_new_tokens,
             )
         else:
             task_prompt: str = typer.prompt(
@@ -168,6 +190,8 @@ def run(
                 backend_req_timeout=backend_req_timeout,
                 backend_endpoint=backend_endpoint,
                 backend_api_key=backend_api_key,
+                backend_project_id=backend_project_id,
+                max_new_tokens=max_new_tokens,
             )
 
         with open(out_dir / f"{out_name}.json", "w") as f:
