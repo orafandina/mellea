@@ -1,0 +1,171 @@
+import os
+import textwrap
+from pathlib import Path
+import pandas as pd
+from datetime import datetime
+
+import mellea
+import mellea.stdlib.sampling.base
+
+m = mellea.start_session()
+
+STRATEGY = {{ strategy_literal | default("mellea.stdlib.sampling.base.RejectionSamplingStrategy(loop_budget=2)") }}
+
+
+# Load data from CSV file
+script_dir = Path(__file__).parent
+INPUT_CSV_FILENAME = {{ input_csv_filename | default("input_data.csv") | tojson }}
+csv_file = script_dir / INPUT_CSV_FILENAME
+
+if not csv_file.exists():
+    print(f"ERROR: Input CSV file not found: {csv_file}")
+    exit(1)
+
+df = pd.read_csv(csv_file)
+
+# CSV column configuration
+{%- if not csv_columns %}
+raise ValueError("csv_columns parameter is required! Must specify CSV column names.")
+{%- endif %}
+
+
+
+# Required columns for task inputs (these will be mapped to task variables)
+task_input_columns = [{% for col in csv_columns %}'{{ col }}', {% endfor %}]
+
+# Additional columns to load (not task inputs, but available as variables)
+{%- if extra_columns %}
+extra_csv_columns = [{% for col in extra_columns %}'{{ col }}', {% endfor %}]
+{%- else %}
+extra_csv_columns = []
+{%- endif %}
+
+# All required columns
+required_columns = task_input_columns + extra_csv_columns
+
+# Validate required columns exist in CSV
+missing_columns = [col for col in required_columns if col not in df.columns]
+if missing_columns:
+    print(f"ERROR: Missing required columns in CSV: {missing_columns}")
+    print(f"Available columns: {list(df.columns)}")
+    exit(1)
+
+
+# Store results for each row
+results = []
+
+# Prepare incremental output file so each row's result is persisted immediately
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+output_dir = script_dir / "decomp_eval_results"
+output_dir.mkdir(parents=True, exist_ok=True)
+output_file = output_dir / f"eval_{timestamp}.csv"
+
+
+def append_row_to_csv(row_dict):
+    """Append a single row result to the incremental CSV output."""
+    single_row_df = pd.DataFrame([row_dict])
+    write_header = not output_file.exists()
+    single_row_df.to_csv(output_file, mode='a', index=False, header=write_header)
+
+# Track which variable names correspond to prior subtasks (these need ".value")
+{%- set subtask_tags_upper = subtasks | map(attribute='tag') | map('upper') | list %}
+
+# Process each row
+for idx, row in df.iterrows():
+    print(f"Processing Row {idx + 1}/{len(df)}")
+    
+    # Create result dictionary for this row - COPIES ALL INPUT COLUMNS
+    result_row = row.to_dict()  # This preserves: code_block_code, llm_response, human_overall, etc.
+    
+    # Load task input variables from CSV row (mapped to task variable names)
+    {%- for var in user_inputs %}
+    {{ var | lower }} = str(row['{{ csv_columns[loop.index0] }}'])  # CSV: {{ csv_columns[loop.index0] }} → Task var: {{ var }}
+    {%- endfor %}
+    
+    # Load extra columns as-is
+    {%- for col in extra_columns %}
+    {{ col | lower }} = row['{{ col }}']  # Extra column: {{ col }}
+    {%- endfor %}
+    
+    try:
+{% for item in subtasks %}
+{% set i = loop.index0 %}
+        # {{ loop.index }}. {{ item.subtask }} - {{ item.tag }}
+        print(f"  Step {{ loop.index }}/{{ loop.length }}: {{ item.tag }}...")
+        {{ item.tag | lower }} = m.instruct(
+            textwrap.dedent(
+                R"""
+                {{ item.prompt_template | trim | indent(width=16, first=False) }}
+                """.strip()
+            ),
+            {%- if item.constraints %}
+            requirements=[
+                {%- for c in item.constraints %}
+                {{ c.constraint | tojson}},
+                {%- endfor %}
+            ],
+            {%- else %}
+            requirements=None,
+            {%- endif %}
+            {%- if loop.first and not user_inputs %}
+            {%- else %}
+            user_variables={
+                {%- for var in item.input_vars_required %}
+                {%- set var_upper = var | upper -%}
+                {%- if var_upper in subtask_tags_upper -%}
+                {{ var_upper | tojson }}: {{ var | lower }}.value,
+                {%- else -%}
+                {{ var_upper | tojson }}: {{ var | lower }},
+                {%- endif -%}
+                {%- endfor %}
+                
+                {%- for var in item.depends_on %}
+                {%- set var_upper = var | upper -%}
+                {%- if var_upper in subtask_tags_upper -%}
+                {{ var_upper | tojson }}: {{ var | lower }}.value,
+                {%- else -%}
+                {{ var_upper | tojson }}: {{ var | lower }},
+                {%- endif -%}
+                {%- endfor %}
+            },
+            {%- endif %}
+            strategy=STRATEGY,
+        )
+        assert {{ item.tag | lower }}.value is not None, 'ERROR: task "{{ item.tag | lower }}" execution failed'
+        
+        # Save result for this subtask
+        result_row['{{ item.tag | lower }}_result'] = {{ item.tag | lower }}.value
+{%- if loop.last %}
+        
+        # Final result
+        final_answer = {{ item.tag | lower }}.value
+        result_row['final_result'] = final_answer
+{%- endif %}
+{%- endfor %}
+        
+        # Save timestamp for this row
+        result_row['evaluation_timestamp'] = datetime.now().isoformat()
+        
+        # Add to results list and persist immediately
+        results.append(result_row)
+        append_row_to_csv(result_row)
+        
+        print(f"  ✓ Row {idx + 1} completed\n")
+        
+    except Exception as e:
+        print(f"  ✗ Error processing row {idx + 1}: {e}")
+        result_row['error'] = str(e)
+        result_row['evaluation_timestamp'] = datetime.now().isoformat()
+        results.append(result_row)
+        append_row_to_csv(result_row)
+        continue
+
+# Create output DataFrame with all input + result data
+results_df = pd.DataFrame(results)
+
+
+# Save to CSV
+results_df.to_csv(output_file, index=False)
+
+
+

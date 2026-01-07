@@ -160,6 +160,7 @@ def decompose(
             )
     # endregion
 
+    print("🔄 Step 1/4: Generating subtasks...")
     subtasks: list[SubtaskItem] = subtask_list.generate(
         m_session, 
         task_prompt, 
@@ -167,8 +168,10 @@ def decompose(
         custom_template=subtask_list_template,
         custom_icl_examples=custom_icl_examples
     ).parse()
+    print(f"   ✓ Generated {len(subtasks)} subtasks")
 
     # Generate subtask prompts FIRST (before constraint extraction)
+    print("🔄 Step 2/4: Generating prompts for each subtask...")
     subtask_prompts: list[SubtaskPromptItem] = subtask_prompt_generator.generate(
         m_session,
         task_prompt,
@@ -178,13 +181,16 @@ def decompose(
         last_subtask_system_template=last_subtask_system_template,
         last_subtask_user_template=last_subtask_user_template,
     ).parse()
+    print(f"   ✓ Generated {len(subtask_prompts)} subtask prompts")
 
     # NEW APPROACH: Generate constraints PER SUBTASK using hybrid method
     # This considers both the original task prompt and the specific subtask context
+    print(f"🔄 Step 3/4: Extracting constraints for each subtask (hybrid approach)...")
     subtask_prompts_with_constraints: list[SubtaskPromptConstraintsItem] = []
     all_constraints_dict: dict[str, Literal["code", "llm"]] = {}  # Track all unique constraints
     
-    for subtask_prompt in subtask_prompts:
+    for idx, subtask_prompt in enumerate(subtask_prompts, 1):
+        print(f"   Processing subtask {idx}/{len(subtask_prompts)}: {subtask_prompt.subtask[:60]}...")
         # Extract constraints for THIS specific subtask using hybrid approach
         subtask_constraints: list[str] = constraint_extractor.generate(
             m_session,
@@ -200,12 +206,15 @@ def decompose(
         ).parse()
         
         # Determine validation strategy for each constraint
+        new_constraints_count = 0
         for constraint in subtask_constraints:
             if constraint not in all_constraints_dict:
                 # Only call validation_decision once per unique constraint
+                new_constraints_count += 1
                 all_constraints_dict[constraint] = validation_decision.generate(
                     m_session, constraint, max_new_tokens=max_new_tokens
                 ).parse()
+        print(f"      → Found {len(subtask_constraints)} constraints ({new_constraints_count} new, {len(subtask_constraints)-new_constraints_count} duplicates)")
         
         # Build SubtaskPromptConstraintsItem
         subtask_prompts_with_constraints.append(
@@ -216,6 +225,9 @@ def decompose(
                 constraints=subtask_constraints,
             )
         )
+    
+    print(f"   ✓ Extracted total of {len(all_constraints_dict)} unique constraints across all subtasks")
+    print("🔄 Step 4/4: Assembling final decomposition result...")
 
     decomp_subtask_result: list[DecompSubtasksResult] = [
         DecompSubtasksResult(
@@ -258,7 +270,7 @@ def decompose(
         for subtask_data in subtask_prompts_with_constraints
     ]
 
-    return DecompPipelineResult(
+    result = DecompPipelineResult(
         original_task_prompt=task_prompt,
         subtask_list=[item.subtask for item in subtasks],
         identified_constraints=[
@@ -270,3 +282,6 @@ def decompose(
         ],
         subtasks=decomp_subtask_result,
     )
+    
+    print("✅ Decomposition complete!\n")
+    return result
