@@ -7,9 +7,9 @@ from typing import TypeVar
 import granite_common.intrinsics
 import yaml
 
-from mellea.backends import Backend
-from mellea.backends.adapters.catalog import AdapterType, fetch_intrinsic_metadata
-from mellea.backends.types import _ServerType
+from ...core import Backend
+from ...helpers import _ServerType
+from .catalog import AdapterType, fetch_intrinsic_metadata
 
 
 class Adapter(abc.ABC):
@@ -134,8 +134,8 @@ class GraniteCommonAdapter(OpenAIAdapter, LocalHFAdapter):
             config_file = granite_common.intrinsics.obtain_io_yaml(
                 self.intrinsic_name,
                 self.base_model_name,
+                self.intrinsic_metadata.repo_id,
                 alora=is_alora,
-                repo_id=self.intrinsic_metadata.repo_id,
             )
         if config_file:
             with open(config_file, encoding="utf-8") as f:
@@ -201,8 +201,8 @@ class GraniteCommonAdapter(OpenAIAdapter, LocalHFAdapter):
             granite_common.intrinsics.obtain_lora(
                 self.intrinsic_name,
                 base_model_name,
+                self.intrinsic_metadata.repo_id,
                 alora=is_alora,
-                repo_id=self.intrinsic_metadata.repo_id,
             )
         )
 

@@ -1,37 +1,33 @@
 # test/rits_backend_tests/test_openai_integration.py
 import asyncio
 import os
+from unittest.mock import patch
 
 import openai
 import pydantic
 import pytest
-from typing_extensions import Annotated
+
+# Mark all tests in this module as requiring Ollama via OpenAI-compatible API
+pytestmark = [pytest.mark.openai, pytest.mark.ollama, pytest.mark.llm]
 
 from mellea import MelleaSession
-from mellea.backends.formatter import TemplateFormatter
-from mellea.backends.model_ids import META_LLAMA_3_2_1B
+from mellea.backends import ModelOption
+from mellea.backends.model_ids import IBM_GRANITE_4_MICRO_3B
 from mellea.backends.openai import OpenAIBackend
-from mellea.backends.types import ModelOption
-from mellea.stdlib.base import CBlock, ChatContext, ModelOutputThunk, SimpleContext
+from mellea.core import CBlock, ModelOutputThunk
+from mellea.formatters import TemplateFormatter
+from mellea.stdlib.context import ChatContext, SimpleContext
 
 
 @pytest.fixture(scope="module")
 def backend(gh_run: int):
     """Shared OpenAI backend configured for Ollama."""
-    if gh_run == 1:
-        return OpenAIBackend(
-            model_id=META_LLAMA_3_2_1B.ollama_name,  # type: ignore
-            formatter=TemplateFormatter(model_id=META_LLAMA_3_2_1B.hf_model_name),  # type: ignore
-            base_url=f"http://{os.environ.get('OLLAMA_HOST', 'localhost:11434')}/v1",
-            api_key="ollama",
-        )
-    else:
-        return OpenAIBackend(
-            model_id="granite3.3:8b",
-            formatter=TemplateFormatter(model_id="ibm-granite/granite-3.2-8b-instruct"),
-            base_url=f"http://{os.environ.get('OLLAMA_HOST', 'localhost:11434')}/v1",
-            api_key="ollama",
-        )
+    return OpenAIBackend(
+        model_id=IBM_GRANITE_4_MICRO_3B.ollama_name,  # type: ignore
+        formatter=TemplateFormatter(model_id=IBM_GRANITE_4_MICRO_3B.hf_model_name),  # type: ignore
+        base_url=f"http://{os.environ.get('OLLAMA_HOST', 'localhost:11434')}/v1",
+        api_key="ollama",
+    )
 
 
 @pytest.fixture(scope="function")
@@ -110,7 +106,6 @@ def test_format(m_session):
     # this is not guaranteed, due to the lack of regexp pattern
     # assert "@" in email.to.email_address
     # assert email.to.email_address.endswith("example.com")
-    pass
 
 
 @pytest.mark.qualitative
@@ -214,6 +209,80 @@ def test_client_cache(backend):
     fourth_client = asyncio.run(get_client_async())
     assert fourth_client in backend._client_cache.cache.values()
     assert len(backend._client_cache.cache.values()) == 2
+
+
+async def test_reasoning_effort_conditional_passing(backend):
+    """Test that reasoning_effort is only passed to API when not None."""
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    ctx = ChatContext()
+    ctx = ctx.add(CBlock(value="Test"))
+
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message = MagicMock()
+    mock_response.choices[0].message.content = "Response"
+    mock_response.choices[0].message.role = "assistant"
+
+    # Test 1: reasoning_effort should NOT be passed when not specified
+    with patch.object(
+        backend._async_client.chat.completions, "create", new_callable=AsyncMock
+    ) as mock_create:
+        mock_create.return_value = mock_response
+        await backend.generate_from_chat_context(
+            CBlock(value="Hi"), ctx, model_options={}
+        )
+        call_kwargs = mock_create.call_args.kwargs
+        assert "reasoning_effort" not in call_kwargs, (
+            "reasoning_effort should not be passed when not specified"
+        )
+
+    # Test 2: reasoning_effort SHOULD be passed when specified
+    with patch.object(
+        backend._async_client.chat.completions, "create", new_callable=AsyncMock
+    ) as mock_create:
+        mock_create.return_value = mock_response
+        await backend.generate_from_chat_context(
+            CBlock(value="Hi"), ctx, model_options={ModelOption.THINKING: "medium"}
+        )
+        call_kwargs = mock_create.call_args.kwargs
+        assert call_kwargs.get("reasoning_effort") == "medium", (
+            "reasoning_effort should be passed with correct value when specified"
+        )
+
+
+def test_api_key_and_base_url_from_parameters():
+    """Test that API key and base URL can be set via parameters."""
+    backend = OpenAIBackend(
+        model_id="gpt-4", api_key="test-api-key", base_url="https://api.test.com/v1"
+    )
+    assert backend._api_key == "test-api-key"
+    assert backend._base_url == "https://api.test.com/v1"
+
+
+def test_parameter_overrides_env_variable():
+    """Test that explicit parameters override environment variables."""
+    with patch.dict(
+        os.environ,
+        {"OPENAI_API_KEY": "env-api-key", "OPENAI_BASE_URL": "https://api.env.com/v1"},
+    ):
+        backend = OpenAIBackend(
+            model_id="gpt-4",
+            api_key="param-api-key",
+            base_url="https://api.param.com/v1",
+        )
+        assert backend._api_key == "param-api-key"
+        assert backend._base_url == "https://api.param.com/v1"
+
+
+def test_missing_api_key_raises_error():
+    """Test that missing API key raises ValueError with helpful message."""
+    with patch.dict(os.environ, {}, clear=True):
+        with pytest.raises(ValueError) as exc_info:
+            OpenAIBackend(model_id="gpt-4", base_url="https://api.test.com/v1")
+        assert "OPENAI_API_KEY or api_key is required but not set" in str(
+            exc_info.value
+        )
 
 
 if __name__ == "__main__":

@@ -5,11 +5,24 @@ import os
 import pydantic
 import pytest
 
+# Mark all tests in this module with backend and auth requirements
+pytestmark = [
+    pytest.mark.watsonx,
+    pytest.mark.llm,
+    pytest.mark.requires_api_key,
+    # Skip entire module in CI since 8/9 tests are qualitative
+    pytest.mark.skipif(
+        int(os.environ.get("CICD", 0)) == 1,
+        reason="Skipping Watsonx tests in CI - mostly qualitative tests",
+    ),
+]
+
 from mellea import MelleaSession
-from mellea.backends.formatter import TemplateFormatter
-from mellea.backends.types import ModelOption
+from mellea.backends import ModelOption
 from mellea.backends.watsonx import WatsonxAIBackend
-from mellea.stdlib.base import CBlock, ModelOutputThunk, ChatContext, SimpleContext
+from mellea.core import CBlock, ModelOutputThunk
+from mellea.formatters import TemplateFormatter
+from mellea.stdlib.context import ChatContext, SimpleContext
 
 
 @pytest.fixture(scope="module")
@@ -38,7 +51,6 @@ def session(backend: WatsonxAIBackend):
 @pytest.mark.qualitative
 def test_filter_chat_completions_kwargs(backend: WatsonxAIBackend):
     """Detect changes to the WatsonxAI TextChatParameters."""
-
     known_keys = [
         "frequency_penalty",
         "logprobs",
@@ -59,7 +71,7 @@ def test_filter_chat_completions_kwargs(backend: WatsonxAIBackend):
         "guided_grammar",
         "guided_json",
     ]
-    test_dict = {key: 1 for key in known_keys}
+    test_dict = dict.fromkeys(known_keys, 1)
 
     # Make sure keys that we think should be in the TextChatParameters are there.
     filtered_dict = backend.filter_chat_completions_kwargs(test_dict)
@@ -118,7 +130,7 @@ def test_format(session: MelleaSession):
     )
     print("Formatted output:")
     email = Email.model_validate_json(
-        output.value
+        output.value  # type: ignore
     )  # this should succeed because the output should be JSON because we passed in a format= argument...
     print(email)
 
@@ -126,7 +138,6 @@ def test_format(session: MelleaSession):
     # this is not guaranteed, due to the lack of regexp pattern
     # assert "@" in email.to.email_address
     # assert email.to.email_address.endswith("example.com")
-    pass
 
 
 @pytest.mark.qualitative
