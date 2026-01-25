@@ -1,3 +1,65 @@
+## [v0.3.0](https://github.com/generative-computing/mellea/releases/tag/v0.3.0) - 2026-01-21
+
+### Feature
+
+* SOFAI Sampling Strategy ([#311](https://github.com/generative-computing/mellea/issues/311)) ([`cbf3913`](https://github.com/generative-computing/mellea/commit/cbf3913845f0186fd89c7ca5d1bd0e29f3ac33b7))
+* Reorg of codebase ([#310](https://github.com/generative-computing/mellea/issues/310)) ([`cbc456b`](https://github.com/generative-computing/mellea/commit/cbc456b242f9aa74b74f2a672dd58126b4672fd3))
+* Add typed components; add typing to model output thunks and sampling results ([#300](https://github.com/generative-computing/mellea/issues/300)) ([`2eb689d`](https://github.com/generative-computing/mellea/commit/2eb689d019a8eb7f89c748a986156a4813b08147))
+
+### Fix
+
+* Tool calling code sample in tutorial ([#313](https://github.com/generative-computing/mellea/issues/313)) ([`a42a487`](https://github.com/generative-computing/mellea/commit/a42a4873522445713380d4a2a690c22a1ad13e89))
+* Adds granite-common[transformers] to Mellea's huggingface depedency group. ([#330](https://github.com/generative-computing/mellea/issues/330)) ([`87a8166`](https://github.com/generative-computing/mellea/commit/87a81664dc9b65da3b643651a7d5a7c5d9656b84))
+* Rename file from test_* ([#332](https://github.com/generative-computing/mellea/issues/332)) ([`6512b32`](https://github.com/generative-computing/mellea/commit/6512b329a506a263592fd033ca90ef0a6d0a5557))
+* Readd init file for mellea/stdlib ([#328](https://github.com/generative-computing/mellea/issues/328)) ([`cb156a7`](https://github.com/generative-computing/mellea/commit/cb156a73231e3fedc7dc6e742fbf85e7ea0c2838))
+* ImageBlocks are CBlocks ([#323](https://github.com/generative-computing/mellea/issues/323)) ([`8a4c910`](https://github.com/generative-computing/mellea/commit/8a4c910e48b72845c75fc14a46dcd34ddee2aeda))
+* Additional tests optimization when running on github actions. ([#293](https://github.com/generative-computing/mellea/issues/293)) ([`c5398e4`](https://github.com/generative-computing/mellea/commit/c5398e4af4120ae7722dde7787b63269ce10daf3))
+* Import times by not exporting RichDocument at module level ([#321](https://github.com/generative-computing/mellea/issues/321)) ([`565b27f`](https://github.com/generative-computing/mellea/commit/565b27f381c01db3f1d11f480e10275b2889ea57))
+* Add logging for start_session details ([#299](https://github.com/generative-computing/mellea/issues/299)) ([`6e68f57`](https://github.com/generative-computing/mellea/commit/6e68f5749c59802821edb71f01d7f9249fe1db6f))
+* Typos in READMEs and documentation ([#303](https://github.com/generative-computing/mellea/issues/303)) ([`9f6a086`](https://github.com/generative-computing/mellea/commit/9f6a0860857e36fe873885f7078412b982d3f5e8))
+* Add explicit exports to __init__.py ([#317](https://github.com/generative-computing/mellea/issues/317)) ([`6e7b09b`](https://github.com/generative-computing/mellea/commit/6e7b09b6b7bceac7529d69012f00cb252fd815a6))
+* Mify protocol issues ([#304](https://github.com/generative-computing/mellea/issues/304)) ([`7013b04`](https://github.com/generative-computing/mellea/commit/7013b04513858b4a740b69187a42bce486747fcc))
+* Linting error ([#302](https://github.com/generative-computing/mellea/issues/302)) ([`c6e3b08`](https://github.com/generative-computing/mellea/commit/c6e3b08c7f6f9fcd52b22975f7f2f03773a0b070))
+* Add double quotes around brackets used in pip install ([#301](https://github.com/generative-computing/mellea/issues/301)) ([`2d017f1`](https://github.com/generative-computing/mellea/commit/2d017f186e52839246c69dc528656cafab79543e))
+
+### Documentation
+
+* Add AGENTS.md to guide AI coding assistants ([#320](https://github.com/generative-computing/mellea/issues/320)) ([`a89256a`](https://github.com/generative-computing/mellea/commit/a89256a6a826b00a403b58abcb889ae730881421))
+* Improve contributor instructions in README. ([#314](https://github.com/generative-computing/mellea/issues/314)) ([`2be67c8`](https://github.com/generative-computing/mellea/commit/2be67c8a85c8ad4ee48359b2ce0ace315de9594d))
+
+## [v0.2.4](https://github.com/generative-computing/mellea/releases/tag/v0.2.4) - 2026-01-08
+
+### Fix
+
+* Fix gc in instructions and add exception to generate walk ([#295](https://github.com/generative-computing/mellea/issues/295)) ([`5fc7df0`](https://github.com/generative-computing/mellea/commit/5fc7df0a0680ced342575fc4cc8787385334c7a4))
+* Marks span tests as qualitative & removes chat error message. ([#294](https://github.com/generative-computing/mellea/issues/294)) ([`5ce6360`](https://github.com/generative-computing/mellea/commit/5ce63604da385550b0781e7429599b5f64a8b2b8))
+
+## [v0.2.3](https://github.com/generative-computing/mellea/releases/tag/v0.2.3) - 2026-01-07
+
+### Feature
+
+* Allow forcing a release through test failures ([#292](https://github.com/generative-computing/mellea/issues/292)) ([`14b55a3`](https://github.com/generative-computing/mellea/commit/14b55a38550581e5b0e0ea05cf5cc8b45a2cd5e5))
+* Lazy Spans and KV Blocks ([#249](https://github.com/generative-computing/mellea/issues/249)) ([`b9e4a33`](https://github.com/generative-computing/mellea/commit/b9e4a33d4a7c79bfe3655aaf10a957947e78d04f))
+* Switch to new RAG intrinsics repo ([#289](https://github.com/generative-computing/mellea/issues/289)) ([`94c35ad`](https://github.com/generative-computing/mellea/commit/94c35adff9d44376a9357e06b20dafd09314b29b))
+
+### Fix
+
+* OpenAI `base_url` default and reasoning effort model option. ([#271](https://github.com/generative-computing/mellea/issues/271)) ([`9733df8`](https://github.com/generative-computing/mellea/commit/9733df8fc2e3a81a0f5ba7c35e1cf468d9eb622f))
+* Unpin granite_commons version from 0.3.5 ([#287](https://github.com/generative-computing/mellea/issues/287)) ([`0b402bd`](https://github.com/generative-computing/mellea/commit/0b402bdc8f73d7543ff56bdbe1a5c304182fcbb5))
+
+## [v0.2.2](https://github.com/generative-computing/mellea/releases/tag/v0.2.2) - 2025-12-18
+
+### Feature
+
+* Add langchain / message interop example ([#257](https://github.com/generative-computing/mellea/issues/257)) ([`9b1f299`](https://github.com/generative-computing/mellea/commit/9b1f29961aa15bcc2cad2181d2c598e668b4f383))
+* Add better error messages for incorrect genslot args ([#248](https://github.com/generative-computing/mellea/issues/248)) ([`9d875d6`](https://github.com/generative-computing/mellea/commit/9d875d669979f58bc574853837b8b51bacd7f0db))
+
+### Fix
+
+* Uv-lock package changes ([#261](https://github.com/generative-computing/mellea/issues/261)) ([`cb0623f`](https://github.com/generative-computing/mellea/commit/cb0623f12a23c1e567bcc2c4f6659adb571738cb))
+* Lock granite-common version to avoid arg changes ([#260](https://github.com/generative-computing/mellea/issues/260)) ([`03716c1`](https://github.com/generative-computing/mellea/commit/03716c1c6ce37be921ba47ae07ec9191021d6e49))
+* Docstrings to have code blocks ([#256](https://github.com/generative-computing/mellea/issues/256)) ([`94a7b40`](https://github.com/generative-computing/mellea/commit/94a7b40950b8c25882f8acf5106d08e353e13d21))
+
 ## [v0.2.1](https://github.com/generative-computing/mellea/releases/tag/v0.2.1) - 2025-12-10
 
 ### Feature

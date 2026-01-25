@@ -1,15 +1,19 @@
 import asyncio
 import json
+from typing import Annotated
 
 import pydantic
 import pytest
-from typing_extensions import Annotated
 
 from mellea import start_session
+from mellea.backends import ModelOption
 from mellea.backends.ollama import OllamaModelBackend
-from mellea.backends.types import ModelOption
-from mellea.stdlib.base import CBlock, SimpleContext
-from mellea.stdlib.requirement import Requirement, simple_validate
+from mellea.core import CBlock, Requirement
+from mellea.stdlib.context import SimpleContext
+from mellea.stdlib.requirements import simple_validate
+
+# Mark all tests in this module as requiring Ollama
+pytestmark = [pytest.mark.ollama, pytest.mark.llm]
 
 
 @pytest.fixture(scope="function")
@@ -29,6 +33,8 @@ def test_simple_instruct(session):
     assert "chat_response" in result._meta
     assert result._meta["chat_response"].message.role == "assistant"
 
+    assert isinstance(result.parsed_repr, str)
+
 
 @pytest.mark.qualitative
 def test_instruct_with_requirement(session):
@@ -37,13 +43,13 @@ def test_instruct_with_requirement(session):
     )
 
     email_word_count_req = Requirement(
-        f"The email should be at most 100",
+        "The email should be at most 100",
         validation_fn=simple_validate(lambda x: len(" ".split(x)) <= 100),
     )
 
     happy_tone_req = Requirement(
         "The email should sound happy in tone.",
-        output_to_bool=lambda x: "happy" in x.value,
+        output_to_bool=lambda x: "happy" in x.value,  # type: ignore
     )
 
     sad_tone_req = Requirement("The email should sound sad in tone.")
@@ -93,7 +99,6 @@ def test_format(session):
     # this is not guaranteed, due to the lack of regexp pattern
     # assert "@" in email.to.email_address
     # assert email.to.email_address.endswith("example.com")
-    pass
 
 
 @pytest.mark.qualitative
@@ -179,7 +184,8 @@ async def test_async_avalue(session):
 
 def test_multiple_asyncio_runs(session):
     async def test():
-        session.achat("hello")
+        result = await session.achat("hello")
+        assert result is not None
 
     asyncio.run(test())
     asyncio.run(test())

@@ -8,7 +8,7 @@ from mellea import MelleaSession
 from mellea.backends.litellm import LiteLLMBackend
 from mellea.backends.ollama import OllamaModelBackend
 from mellea.backends.openai import OpenAIBackend
-from mellea.backends.types import ModelOption
+from mellea.backends import ModelOption
 
 from .prompt_modules import (
     constraint_extractor,

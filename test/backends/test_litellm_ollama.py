@@ -1,15 +1,18 @@
 import asyncio
 import os
+
 import pytest
 
-from mellea import MelleaSession, generative
-from mellea.backends import ModelOption
-from mellea.backends.litellm import LiteLLMBackend
-from mellea.stdlib.base import CBlock, SimpleContext
-from mellea.stdlib.chat import Message
-from mellea.stdlib.sampling import RejectionSamplingStrategy
-from mellea.backends import model_ids
+# Mark all tests in this module as requiring Ollama via LiteLLM
+pytestmark = [pytest.mark.litellm, pytest.mark.ollama, pytest.mark.llm]
 
+from mellea import MelleaSession, generative
+from mellea.backends import ModelOption, model_ids
+from mellea.backends.litellm import LiteLLMBackend
+from mellea.core import CBlock
+from mellea.stdlib.components import Message
+from mellea.stdlib.context import SimpleContext
+from mellea.stdlib.sampling import RejectionSamplingStrategy
 
 _MODEL_ID = f"ollama_chat/{model_ids.IBM_GRANITE_4_MICRO_3B.ollama_name}"
 
@@ -129,6 +132,7 @@ def test_gen_slot(session):
     @generative
     def is_happy(text: str) -> bool:
         """Determine if text is of happy mood."""
+        ...
 
     h = is_happy(session, text="I'm enjoying life.")
 
